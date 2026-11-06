@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { PASS_PERCENT, QUIZ_LENGTH } from "../config";
 import { SuggestLink } from "../components/SuggestLink";
+import { Nav } from "../components/Nav";
 import { loadQuestions } from "../lib/content";
 import {
   displayChoices,
@@ -60,30 +61,70 @@ export function QuizScreen({
 
   if (!topic) {
     return (
-      <p>
-        Unknown topic. <a href="#/">Back to topics</a>
-      </p>
+      <>
+        <Nav title="Quiz" back={{ href: "#/", label: "Topics" }} />
+        <main className="screen">
+          <p className="status-line">Unknown topic.</p>
+        </main>
+      </>
     );
   }
+
+  const back = {
+    href: `#/topic/${topic.id}`,
+    label: topic.code,
+    onClick: (e: MouseEvent<HTMLAnchorElement>) => {
+      if (unlocked && current && !confirm("Leave this attempt? It will not be scored.")) {
+        e.preventDefault();
+      }
+    },
+  };
 
   if (!unlocked) {
     return (
-      <article className="stack">
-        <h1>Quiz locked</h1>
-        <p>
-          Read the {topic.title} learn pack first. The quiz stays locked until
-          every card has been on screen, and again after a score under{" "}
-          {PASS_PERCENT}%.
-        </p>
-        <a className="btn primary" href={`#/learn/${topic.id}`}>
-          Open learn cards
-        </a>
-      </article>
+      <>
+        <Nav title="Quiz" back={back} />
+        <main className="screen">
+          <div className="screen-body">
+            <p className="section-label">Locked</p>
+            <section className="group">
+              <p className="pad">
+                Read the {topic.title} learn pack first. The quiz stays locked
+                until every card has been on screen, and again after a score
+                under {PASS_PERCENT}%.
+              </p>
+            </section>
+          </div>
+          <div className="dock">
+            <a className="btn primary" href={`#/learn/${topic.id}`}>
+              Open learn cards
+            </a>
+          </div>
+        </main>
+      </>
     );
   }
 
-  if (error) return <p>{error}</p>;
-  if (!current || !bank) return <p className="muted">Drawing a question…</p>;
+  if (error) {
+    return (
+      <>
+        <Nav title="Quiz" back={back} />
+        <main className="screen">
+          <p className="status-line">{error}</p>
+        </main>
+      </>
+    );
+  }
+  if (!current || !bank) {
+    return (
+      <>
+        <Nav title="Quiz" back={back} />
+        <main className="screen">
+          <p className="status-line">Drawing a question…</p>
+        </main>
+      </>
+    );
+  }
 
   const choices = displayChoices(current);
   const revealed = picked !== null;
@@ -152,93 +193,84 @@ export function QuizScreen({
   }
 
   return (
-    <article className="stack">
-      <p className="back">
-        <a
-          href={`#/topic/${topic.id}`}
-          onClick={(e) => {
-            if (!confirm("Leave this attempt? It will not be scored.")) {
-              e.preventDefault();
-            }
-          }}
-        >
-          {topic.title}
-        </a>
-      </p>
-      <div className="panel-head">
-        <h1>
-          Question {answeredCount + 1} of {QUIZ_LENGTH}
-        </h1>
-        <span className={`pill diff-${current.difficulty}`}>{current.difficulty}</span>
-      </div>
-      <div
-        className="bar"
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={QUIZ_LENGTH}
-        aria-valuenow={answeredCount}
-      >
-        <span style={{ width: `${(answeredCount / QUIZ_LENGTH) * 100}%` }} />
-      </div>
-      <p className="muted run">
-        {running === null
-          ? "Starts at medium, then follows how this attempt is going."
-          : `Running ${correctCount}/${answeredCount}. ${
-              running >= 0.8
-                ? "Biasing harder."
-                : running <= 0.5
-                  ? "Biasing easier."
-                  : "Staying around medium."
-            }`}
-      </p>
-      <h2 className="stem">{current.stem}</h2>
-      <div className="choices" role="group" aria-label="Answers">
-        {choices.map((choice, i) => {
-          const correct = current.choiceOrder[i] === current.answerIndex;
-          let cls = "choice";
-          if (revealed && correct) cls += " is-correct";
-          if (revealed && picked === i && !correct) cls += " is-wrong";
-          return (
-            <button
-              key={choice}
-              type="button"
-              className={cls}
-              disabled={revealed}
-              onClick={() => choose(i)}
-            >
-              <span className="choice-key">{i + 1}</span>
-              {choice}
-            </button>
-          );
-        })}
-      </div>
-      {revealed && (
-        <div className="explain">
-          <p>{current.explanation}</p>
-          <p className="cite">{current.citation}</p>
-          <p className={`src src-${current.sourceConfidence}`}>
-            {current.sourceConfidence === "full"
-              ? "Source text: full public copy in the lab pack."
-              : current.sourceConfidence === "preview"
-                ? "Source text: preview only. This is not the full standard."
-                : "Source: typical IEC/CISPR practice, not a number invented for this quiz."}
+    <>
+      <Nav
+        title={`${answeredCount + 1}/${QUIZ_LENGTH}`}
+        back={back}
+        trailing={<span className="nav-meta">{current.difficulty}</span>}
+      />
+      <main className="screen">
+        <div className="screen-body">
+          <div
+            className="bar quiz-bar"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={QUIZ_LENGTH}
+            aria-valuenow={answeredCount}
+          >
+            <span style={{ width: `${(answeredCount / QUIZ_LENGTH) * 100}%` }} />
+          </div>
+          <p className="status-line">
+            {running === null
+              ? "Starts at medium, then follows how this attempt is going."
+              : `Running ${correctCount}/${answeredCount}. ${
+                  running >= 0.8
+                    ? "Biasing harder."
+                    : running <= 0.5
+                      ? "Biasing easier."
+                      : "Staying around medium."
+                }`}
           </p>
-          <p className="muted">
-            <SuggestLink /> — flag this item if the stem or the citation is off.
-          </p>
+          <h2 className="stem">{current.stem}</h2>
+          <div className="choices" role="group" aria-label="Answers">
+            {choices.map((choice, i) => {
+              const correct = current.choiceOrder[i] === current.answerIndex;
+              let cls = "choice";
+              if (revealed && correct) cls += " is-correct";
+              if (revealed && picked === i && !correct) cls += " is-wrong";
+              return (
+                <button
+                  key={choice}
+                  type="button"
+                  className={cls}
+                  disabled={revealed}
+                  onClick={() => choose(i)}
+                >
+                  <span className="choice-key">{i + 1}</span>
+                  <span>{choice}</span>
+                </button>
+              );
+            })}
+          </div>
+          {revealed && (
+            <section className="group explain">
+              <p>{current.explanation}</p>
+              <p className="cite">{current.citation}</p>
+              <p className={`src src-${current.sourceConfidence}`}>
+                {current.sourceConfidence === "full"
+                  ? "Source text: full public copy in the lab pack."
+                  : current.sourceConfidence === "preview"
+                    ? "Source text: preview only. This is not the full standard."
+                    : "Source: typical IEC/CISPR practice, not a number invented for this quiz."}
+              </p>
+              <p className="row-sub">
+                <SuggestLink /> — flag this item if the stem or the citation is
+                off. Weak area: {areaLabel(current.area)}.
+              </p>
+            </section>
+          )}
         </div>
-      )}
-      <div className="actions">
-        <button
-          className="btn primary"
-          type="button"
-          disabled={!revealed}
-          onClick={advance}
-        >
-          {answeredCount + 1 >= QUIZ_LENGTH ? "See results" : "Next question"}
-        </button>
-      </div>
-      <p className="fine">Weak-area tag: {areaLabel(current.area)}</p>
-    </article>
+        <div className="dock">
+          <button
+            className="btn primary"
+            type="button"
+            disabled={!revealed}
+            onClick={advance}
+          >
+            {answeredCount + 1 >= QUIZ_LENGTH ? "See results" : "Next question"}
+          </button>
+        </div>
+      </main>
+    </>
   );
 }

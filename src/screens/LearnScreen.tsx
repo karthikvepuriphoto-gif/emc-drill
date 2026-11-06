@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Nav } from "../components/Nav";
 import { loadLearn } from "../lib/content";
 import { learnOf, noteCardSeen } from "../lib/storage";
 import { topicById } from "../topics";
@@ -43,90 +44,119 @@ export function LearnScreen({
 
   if (!topic) {
     return (
-      <p>
-        Unknown topic. <a href="#/">Back to topics</a>
-      </p>
+      <>
+        <Nav title="Learn" back={{ href: "#/", label: "Topics" }} />
+        <main className="screen">
+          <p className="status-line">Unknown topic.</p>
+        </main>
+      </>
     );
   }
-  if (error) return <p>{error}</p>;
-  if (!pack) return <p className="muted">Loading cards…</p>;
+  if (error) {
+    return (
+      <>
+        <Nav
+          title="Learn"
+          back={{ href: `#/topic/${topic.id}`, label: topic.code }}
+        />
+        <main className="screen">
+          <p className="status-line">{error}</p>
+        </main>
+      </>
+    );
+  }
+  if (!pack) {
+    return (
+      <>
+        <Nav
+          title="Learn"
+          back={{ href: `#/topic/${topic.id}`, label: topic.code }}
+        />
+        <main className="screen">
+          <p className="status-line">Loading cards…</p>
+        </main>
+      </>
+    );
+  }
 
   const card = pack.cards[index];
   const learn = learnOf(state, topic.id);
   const total = pack.cards.length;
-  const seenCount = pack.cards.filter((c) => learn.seen.includes(c.id)).length;
 
   function go(next: number) {
     setIndex(Math.max(0, Math.min(total - 1, next)));
   }
 
   return (
-    <article className="stack">
-      <p className="back">
-        <a href={`#/topic/${topic.id}`}>{topic.title}</a>
-      </p>
-      <div className="panel-head">
-        <h1>Learn · {topic.code}</h1>
-        <span>
-          Card {index + 1} of {total}
-        </span>
-      </div>
-      <div
-        className="bar"
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={total}
-        aria-valuenow={seenCount}
-        aria-label="Cards read"
-      >
-        <span style={{ width: `${(seenCount / total) * 100}%` }} />
-      </div>
-      <div
-        className="card"
-        onTouchStart={(e) => {
-          const x = e.changedTouches[0]?.clientX ?? 0;
-          e.currentTarget.dataset.x = String(x);
-        }}
-        onTouchEnd={(e) => {
-          const start = Number(e.currentTarget.dataset.x ?? "0");
-          const end = e.changedTouches[0]?.clientX ?? start;
-          const dx = end - start;
-          if (dx < -48) go(index + 1);
-          if (dx > 48) go(index - 1);
-        }}
-      >
-        <h2>{card.title}</h2>
-        <p>{card.body}</p>
-        <p className="cite">{card.citation}</p>
-      </div>
-      <div className="actions">
-        <button
-          className="btn"
-          type="button"
-          onClick={() => go(index - 1)}
-          disabled={index === 0}
+    <>
+      <Nav
+        title={`${index + 1}/${total}`}
+        back={{ href: `#/topic/${topic.id}`, label: topic.code }}
+        trailing={<span className="nav-meta">Learn</span>}
+      />
+      <main className="screen">
+        <div
+          className="learn-panel"
+          onTouchStart={(e) => {
+            const x = e.changedTouches[0]?.clientX ?? 0;
+            e.currentTarget.dataset.x = String(x);
+          }}
+          onTouchEnd={(e) => {
+            const start = Number(e.currentTarget.dataset.x ?? "0");
+            const end = e.changedTouches[0]?.clientX ?? start;
+            const dx = end - start;
+            if (dx < -48) go(index + 1);
+            if (dx > 48) go(index - 1);
+          }}
         >
-          Previous
-        </button>
-        {index < total - 1 ? (
-          <button className="btn primary" type="button" onClick={() => go(index + 1)}>
-            Next card
+          <div
+            className="bar"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={total}
+            aria-valuenow={index + 1}
+            aria-label="Cards read"
+          >
+            <span style={{ width: `${((index + 1) / total) * 100}%` }} />
+          </div>
+          <h2 className="learn-title">{card.title}</h2>
+          <p className="learn-body">{card.body}</p>
+          <p className="cite">{card.citation}</p>
+          <div className="dots" aria-hidden="true">
+            {pack.cards.map((c, i) => (
+              <span key={c.id} className={i === index ? "dot on" : "dot"} />
+            ))}
+          </div>
+        </div>
+        <p className="caption">
+          {learn.complete
+            ? "Pack complete. The quiz is unlocked."
+            : "Swipe or use Next. The quiz unlocks when every card has been on screen."}
+        </p>
+        <div className="dock">
+          <button
+            className="btn secondary"
+            type="button"
+            onClick={() => go(index - 1)}
+            disabled={index === 0}
+          >
+            Previous
           </button>
-        ) : learn.complete ? (
-          <a className="btn primary" href={`#/quiz/${topic.id}`}>
-            Start quiz
-          </a>
-        ) : (
-          <button className="btn primary" type="button" disabled>
-            Finish the card
-          </button>
-        )}
-      </div>
-      <p className="muted">
-        {learn.complete
-          ? "Pack complete. The quiz is unlocked."
-          : "Swipe or use Next. The quiz unlocks when every card has been on screen."}
-      </p>
-    </article>
+          {index < total - 1 ? (
+            <button className="btn primary" type="button" onClick={() => go(index + 1)}>
+              Next card
+            </button>
+          ) : learn.complete ? (
+            <a className="btn primary" href={`#/quiz/${topic.id}`}>
+              Start quiz
+            </a>
+          ) : (
+            <button className="btn primary" type="button" disabled>
+              Finish the card
+            </button>
+          )}
+        </div>
+      </main>
+    </>
   );
 }

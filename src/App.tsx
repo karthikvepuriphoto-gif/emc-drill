@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { SuggestLink, SuggestNote } from "./components/SuggestLink";
 import { emptyState, loadState, saveState } from "./lib/storage";
 import { HistoryScreen } from "./screens/HistoryScreen";
 import { HomeScreen } from "./screens/HomeScreen";
@@ -66,9 +65,7 @@ export default function App() {
     [],
   );
 
-  let body: ReactNode = (
-    <p className="muted">Loading scores on this device…</p>
-  );
+  let body: ReactNode = <p className="status-line">Loading scores on this device…</p>;
   if (state) {
     if (route.name === "home") {
       body = (
@@ -82,9 +79,7 @@ export default function App() {
     } else if (route.name === "topic") {
       body = <TopicScreen topicId={route.id} state={state} />;
     } else if (route.name === "learn") {
-      body = (
-        <LearnScreen topicId={route.id} state={state} update={update} />
-      );
+      body = <LearnScreen topicId={route.id} state={state} update={update} />;
     } else if (route.name === "quiz") {
       body = <QuizScreen topicId={route.id} state={state} update={update} />;
     } else {
@@ -92,35 +87,5 @@ export default function App() {
     }
   }
 
-  return (
-    <div className="app">
-      <header className="bezel">
-        <a className="brand" href="#/">
-          <span className="brand-mark" aria-hidden="true">
-            ED
-          </span>
-          <span>
-            <strong>EMC Drill</strong>
-            <small>NCEE Labs</small>
-          </span>
-        </a>
-        <nav>
-          <a href="#/">Topics</a>
-          <a href="#/history">History</a>
-          <SuggestLink />
-        </nav>
-      </header>
-      <main>{body}</main>
-      <footer className="site-footer">
-        <SuggestLink />
-        <SuggestNote />
-        <p className="fine">
-          Study tool for the bench. Limits are taken from the lab source pack
-          (eCFR Part 15, ICES-002/003, the RED Guide, ETSI EN 301 489-1, REDCA
-          TGN 01). Preview-only standards are marked and are not treated as the
-          full text. Not a legal opinion and not a substitute for the standard.
-        </p>
-      </footer>
-    </div>
-  );
+  return <div className="app">{body}</div>;
 }
