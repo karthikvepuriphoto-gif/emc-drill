@@ -14,5 +14,5 @@ export function SuggestLink({ className = "" }: { className?: string }) {
 }
 
 export function SuggestNote() {
-  return <p className="suggest-note">{SUGGESTION_NOTE}</p>;
+  return <p className="caption">{SUGGESTION_NOTE}</p>;
 }

@@ -14,8 +14,8 @@ export default defineConfig({
         short_name: "EMC Drill",
         description:
           "Learn EMC tests and regulations, then take adaptive quizzes. NCEE Labs.",
-        theme_color: "#10262c",
-        background_color: "#e7eef0",
+        theme_color: "#0e5c56",
+        background_color: "#f2f2f7",
         display: "standalone",
         start_url: "/emc-drill/",
         scope: "/emc-drill/",
